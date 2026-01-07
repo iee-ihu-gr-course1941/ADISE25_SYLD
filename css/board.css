@@ -1,0 +1,204 @@
+/* css/board.css */
+
+/* Game Board Layout */
+.game-board {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border-radius: 15px;
+    padding: 20px;
+    min-height: 600px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    color: white;
+}
+
+/* Player Areas */
+.player-area {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.player-area.opponent {
+    border: 2px solid #e74c3c;
+}
+
+.player-area.player {
+    border: 2px solid #2ecc71;
+}
+
+.player-area.active-turn {
+    border: 3px solid #f39c12;
+    box-shadow: 0 0 15px rgba(243, 156, 18, 0.5);
+}
+
+.player-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.player-header h5 {
+    margin: 0;
+    color: #ecf0f1;
+}
+
+/* Hand Areas */
+.hand-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-height: 120px;
+    padding: 10px;
+    justify-content: center;
+}
+
+/* Card Styles */
+.card-item, .table-card-item, .card-back {
+    width: 80px;
+    height: 110px;
+    background: white;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.card-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+}
+
+.card-item.selected {
+    transform: translateY(-10px);
+    border: 3px solid #f39c12;
+}
+
+.card-back {
+    background: linear-gradient(45deg, #3498db, #2980b9);
+    color: white;
+    font-size: 24px;
+}
+
+.card-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.card-suit {
+    font-size: 32px;
+    margin-top: 5px;
+}
+
+/* Suit Colors */
+.card-suit[data-suit="hearts"],
+.card-suit[data-suit="diamonds"] {
+    color: #e74c3c;
+}
+
+.card-suit[data-suit="clubs"],
+.card-suit[data-suit="spades"] {
+    color: #2c3e50;
+}
+
+/* Table Area */
+.table-area {
+    background: rgba(236, 240, 241, 0.1);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+}
+
+.table-header {
+    margin-bottom: 20px;
+}
+
+.table-header h4 {
+    color: #ecf0f1;
+    margin: 0;
+}
+
+.table-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    min-height: 150px;
+    align-items: center;
+}
+
+/* Empty States */
+.empty-table, .empty-hand, .loading-cards {
+    padding: 40px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+}
+
+/* Controls */
+.game-controls {
+    margin-top: 20px;
+}
+
+.game-controls .btn {
+    margin-bottom: 10px;
+}
+
+/* Stats */
+.player-stats .badge {
+    font-size: 0.9em;
+    padding: 5px 10px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .card-item, .table-card-item, .card-back {
+        width: 60px;
+        height: 85px;
+    }
+    
+    .card-value {
+        font-size: 18px;
+    }
+    
+    .card-suit {
+        font-size: 24px;
+    }
+    
+    .hand-area {
+        min-height: 100px;
+    }
+}
+
+/* Animation for new cards */
+@keyframes cardDeal {
+    0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.card-item.new-card {
+    animation: cardDeal 0.5s ease-out;
+}
+
+/* Xeri animation */
+@keyframes xeriAnimation {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.xeri-card {
+    animation: xeriAnimation 0.5s ease-in-out 3;
+    border: 3px solid gold !important;
+}

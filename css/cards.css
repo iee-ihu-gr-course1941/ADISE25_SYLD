@@ -1,0 +1,177 @@
+/* css/cards.css */
+
+/* Card deck colors */
+.card.hearts, .card.diamonds {
+    color: #e74c3c;
+}
+
+.card.clubs, .card.spades {
+    color: #2c3e50;
+}
+
+/* Card ranks styling */
+.card-rank-A:before { content: 'A'; }
+.card-rank-2:before { content: '2'; }
+.card-rank-3:before { content: '3'; }
+.card-rank-4:before { content: '4'; }
+.card-rank-5:before { content: '5'; }
+.card-rank-6:before { content: '6'; }
+.card-rank-7:before { content: '7'; }
+.card-rank-8:before { content: '8'; }
+.card-rank-9:before { content: '9'; }
+.card-rank-10:before { content: '10'; }
+.card-rank-J:before { content: 'J'; }
+.card-rank-Q:before { content: 'Q'; }
+.card-rank-K:before { content: 'K'; }
+
+/* Special cards highlighting */
+.card-valet {
+    background: linear-gradient(135deg, #f1c40f, #f39c12);
+    color: white;
+}
+
+.card-ten-diamonds {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+.card-two-clubs {
+    background: linear-gradient(135deg, #27ae60, #229954);
+    color: white;
+}
+
+/* Card selection states */
+.card.selected {
+    box-shadow: 0 0 0 3px #f39c12, 0 0 20px rgba(243, 156, 18, 0.5);
+    z-index: 100;
+}
+
+.card.claimable {
+    border: 2px dashed #2ecc71;
+    cursor: pointer;
+}
+
+.card.claimable:hover {
+    background: rgba(46, 204, 113, 0.1);
+}
+
+/* Card back design */
+.card-back-design {
+    background: repeating-linear-gradient(
+        45deg,
+        #3498db,
+        #3498db 10px,
+        #2980b9 10px,
+        #2980b9 20px
+    );
+    position: relative;
+}
+
+.card-back-design:before {
+    content: '🎴';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    opacity: 0.7;
+}
+
+/* Small cards for opponents */
+.card-small {
+    width: 40px;
+    height: 60px;
+    font-size: 12px;
+}
+
+.card-small .card-value {
+    font-size: 14px;
+}
+
+.card-small .card-suit {
+    font-size: 18px;
+}
+
+/* Stacked cards effect */
+.card-stack {
+    position: relative;
+}
+
+.card-stack .card-item {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.card-stack .card-item:nth-child(2) { top: 2px; left: 2px; }
+.card-stack .card-item:nth-child(3) { top: 4px; left: 4px; }
+.card-stack .card-item:nth-child(4) { top: 6px; left: 6px; }
+.card-stack .card-item:nth-child(5) { top: 8px; left: 8px; }
+
+/* Card pile for stock/discard */
+.card-pile {
+    width: 100px;
+    height: 140px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.card-pile:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.card-pile.stock {
+    background: rgba(52, 152, 219, 0.2);
+    border-color: #3498db;
+}
+
+.card-pile.discard {
+    background: rgba(231, 76, 60, 0.2);
+    border-color: #e74c3c;
+}
+
+/* Card tooltips */
+.card-tooltip {
+    position: absolute;
+    background: #2c3e50;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    z-index: 1000;
+    white-space: nowrap;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    pointer-events: none;
+}
+
+/* Card flip animation */
+@keyframes flipCard {
+    0% { transform: rotateY(0deg); }
+    50% { transform: rotateY(90deg); }
+    100% { transform: rotateY(0deg); }
+}
+
+.card-flip {
+    animation: flipCard 0.6s ease-in-out;
+}
+
+/* Glow effect for important cards */
+.card-glow {
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.7);
+}
+
+.card-glow-red {
+    box-shadow: 0 0 15px rgba(231, 76, 60, 0.7);
+}
+
+.card-glow-blue {
+    box-shadow: 0 0 15px rgba(52, 152, 219, 0.7);
+}
