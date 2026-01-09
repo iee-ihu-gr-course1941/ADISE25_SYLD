@@ -1,8 +1,8 @@
 <?php
 // db_config.php
 define('DB_HOST', 'localhost');
-define('DB_PORT', '3308');  
-define('DB_USER', 'iee2020122');
+define('DB_PORT', '3307');  
+define('DB_USER', 'iee2020193');
 define('DB_PASS', '2837issiml');  
 define('DB_NAME', 'syld_db');
 

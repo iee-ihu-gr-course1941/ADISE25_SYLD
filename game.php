@@ -1,5 +1,9 @@
 <?php
-// game.php (το κύριο αρχείο - ΕΝΗΜΕΡΩΣΗ)
+// game.php - ΟΛΟΚΛΗΡΩΜΕΝΟ (FIXED)
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+
 require_once 'db_config.php';
 session_start();
 
@@ -13,11 +17,13 @@ $user_id = $_SESSION['user_id'];
 $username = $_SESSION['username'];
 $is_guest = $_SESSION['is_guest'] ?? false;
 
-// Check if we're in an active game
+// Check for active game
 $active_game_id = 0;
 $player_number = 0;
 
-// Try to find active game for this user
+$db = getDBConnection();
+
+// Find active game - FIXED: 4 parameters needed
 $sql = "SELECT g.id, 
                CASE 
                    WHEN g.player1_id = ? THEN 1
@@ -31,6 +37,7 @@ $sql = "SELECT g.id,
         LIMIT 1";
 
 $stmt = $db->prepare($sql);
+// FIXED: Changed from "iii" to "iiii" - 4 parameters needed
 $stmt->bind_param("iiii", $user_id, $user_id, $user_id, $user_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -39,6 +46,11 @@ if ($row = $result->fetch_assoc()) {
     $active_game_id = $row['id'];
     $player_number = $row['player_num'];
 }
+
+// Debug info
+// echo "User ID: $user_id<br>";
+// echo "Active Game ID: $active_game_id<br>";
+// echo "Player Number: $player_number<br>";
 ?>
 <!DOCTYPE html>
 <html lang="el">
@@ -58,7 +70,62 @@ if ($row = $result->fetch_assoc()) {
     
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+<script src="js/xeri-game-engine.js"></script>
+    <script src="js/xeri-board-renderer.js"></script>
+    <script src="js/xeri-api-client.js"></script>
+    <script src="js/xeri-ui-handler.js"></script>
+
 </head>
+
+<script>
+    // Pass PHP variables to JavaScript
+    window.gameData = {
+        gameId: <?php echo $active_game_id; ?>,
+        playerNumber: <?php echo $player_number; ?>,
+        userId: <?php echo $user_id; ?>,
+        username: '<?php echo addslashes($username); ?>',
+        isGuest: <?php echo $is_guest ? 'true' : 'false'; ?>
+    };
+
+    // Initialize when document is ready
+    $(document).ready(function() {
+        console.log('Game page loaded with data:', window.gameData);
+        
+        // Initialize the game engine
+        if (typeof XeriGameEngine !== 'undefined') {
+            const gameEngine = new XeriGameEngine();
+            
+            // Set the initial data from PHP
+            gameEngine.gameId = window.gameData.gameId;
+            gameEngine.playerNumber = window.gameData.playerNumber;
+            gameEngine.userId = window.gameData.userId;
+            gameEngine.username = window.gameData.username;
+            gameEngine.isGuest = window.gameData.isGuest;
+            
+            // Start the engine
+            gameEngine.init();
+            
+            // Make it globally accessible for debugging
+            window.xeriGame = gameEngine;
+        }
+        
+        // Show/hide difficulty based on game type
+        $('#game-type').change(function() {
+            if ($(this).val() === 'human-computer') {
+                $('#difficulty-container').show();
+            } else {
+                $('#difficulty-container').hide();
+            }
+        });
+        
+        // Initialize game type change
+        $('#game-type').trigger('change');
+    });
+    </script>
+
+
 <body>
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -67,49 +134,28 @@ if ($row = $result->fetch_assoc()) {
                 <i class="fas fa-cards"></i> Ξερί Online
             </a>
             
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="game.php">
-                            <i class="fas fa-home"></i> Αρχική
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" id="btn-new-game-nav">
-                            <i class="fas fa-plus-circle"></i> Νέο Παιχνίδι
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="stats.php">
-                            <i class="fas fa-chart-bar"></i> Στατιστικά
-                        </a>
-                    </li>
-                </ul>
-                
-                <div class="navbar-text">
-                    <span class="me-3">
-                        <i class="fas fa-user"></i> 
-                        <?php echo htmlspecialchars($username); ?>
-                        <?php if ($is_guest): ?>
-                            <span class="badge bg-warning">Guest</span>
-                        <?php endif; ?>
-                    </span>
-                    <button class="btn btn-sm btn-outline-light" id="btn-logout">
-                        <i class="fas fa-sign-out-alt"></i> Αποσύνδεση
-                    </button>
-                </div>
+            <div class="navbar-text">
+                <span class="me-3">
+                    <i class="fas fa-user"></i> 
+                    <?php echo htmlspecialchars($username); ?>
+                    <?php if ($is_guest): ?>
+                        <span class="badge bg-warning">Guest</span>
+                    <?php endif; ?>
+                </span>
+                <button class="btn btn-sm btn-outline-light" id="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i> Αποσύνδεση
+                </button>
             </div>
         </div>
     </nav>
-    
     <!-- Main Game Container -->
     <div class="container-fluid mt-4">
         <div class="row">
-            <!-- Left Panel: Game Info & Controls -->
+            <!-- Left Panel -->
             <div class="col-md-3">
                 <div class="card mb-3">
                     <div class="card-header bg-info text-white">
-                        <i class="fas fa-info-circle"></i> Πληροφορίες Παιχνιδιού
+                        <i class="fas fa-info-circle"></i> Πληροφορίες
                     </div>
                     <div class="card-body">
                         <div id="game-info">
@@ -119,8 +165,8 @@ if ($row = $result->fetch_assoc()) {
                                 <p><strong>Κατάσταση:</strong> <span class="badge bg-success" id="game-status">Ενεργό</span></p>
                             <?php else: ?>
                                 <p class="text-muted">Δεν έχετε ενεργό παιχνίδι</p>
-                                <button class="btn btn-primary btn-sm" id="btn-find-game">
-                                    <i class="fas fa-search"></i> Βρες Παιχνίδι
+                                <button class="btn btn-primary btn-sm" id="btn-new-game">
+                                    <i class="fas fa-plus"></i> Νέο Παιχνίδι
                                 </button>
                             <?php endif; ?>
                         </div>
@@ -131,13 +177,10 @@ if ($row = $result->fetch_assoc()) {
                             <h6><i class="fas fa-gamepad"></i> Ελέγχους:</h6>
                             <div class="d-grid gap-2">
                                 <button class="btn btn-primary" id="btn-draw-card" disabled>
-                                    <i class="fas fa-download"></i> Τράβηξε Κάρτα
+                                    <i class="fas fa-download"></i> Τράβηξε
                                 </button>
                                 <button class="btn btn-secondary" id="btn-pass-turn" disabled>
-                                    <i class="fas fa-forward"></i> Παράτα Σειρά
-                                </button>
-                                <button class="btn btn-warning" id="btn-claim-xeri" disabled>
-                                    <i class="fas fa-star"></i> Δήλωσε Ξερή
+                                    <i class="fas fa-forward"></i> Παράτα
                                 </button>
                             </div>
                         </div>
@@ -147,28 +190,17 @@ if ($row = $result->fetch_assoc()) {
                 <!-- Player Stats -->
                 <div class="card">
                     <div class="card-header bg-success text-white">
-                        <i class="fas fa-chart-line"></i> Στατιστικά
+                        <i class="fas fa-chart-line"></i> Σκορ
                     </div>
                     <div class="card-body">
                         <div class="row text-center">
                             <div class="col-6">
                                 <h5 id="my-score">0</h5>
-                                <small>Πόντοι σου</small>
+                                <small>Εσύ</small>
                             </div>
                             <div class="col-6">
                                 <h5 id="opponent-score">0</h5>
-                                <small>Πόντοι αντιπάλου</small>
-                            </div>
-                        </div>
-                        <hr>
-                        <div class="row text-center">
-                            <div class="col-6">
-                                <h5 id="my-xeri">0</h5>
-                                <small>Ξερές σου</small>
-                            </div>
-                            <div class="col-6">
-                                <h5 id="opponent-xeri">0</h5>
-                                <small>Ξερές αντιπάλου</small>
+                                <small>Αντίπαλος</small>
                             </div>
                         </div>
                     </div>
@@ -183,12 +215,12 @@ if ($row = $result->fetch_assoc()) {
                         <div class="player-header">
                             <h5><i class="fas fa-robot"></i> Αντίπαλος</h5>
                             <div class="player-stats">
-                                <span class="badge bg-secondary" id="opponent-cards-count">6 κάρτες</span>
+                                <span class="badge bg-secondary" id="opponent-cards-count">0 κάρτες</span>
                             </div>
                         </div>
                         <div class="hand-area" id="opponent-hand">
-                            <!-- Computer's cards (face down) -->
-                            <div class="card-back" title="6 κάρτες">
+                            <!-- Computer's cards -->
+                            <div class="card-back" title="Κάρτες αντιπάλου">
                                 <i class="fas fa-question"></i>
                             </div>
                         </div>
@@ -199,13 +231,13 @@ if ($row = $result->fetch_assoc()) {
                         <div class="table-header">
                             <h4><i class="fas fa-table"></i> Τραπέζι</h4>
                             <div class="table-stats">
-                                <span class="badge bg-info" id="stock-count">40 κάρτες</span>
+                                <span class="badge bg-info" id="stock-count">52 κάρτες</span>
                             </div>
                         </div>
                         <div class="table-cards" id="table-cards-container">
-                            <!-- Table cards will be rendered here -->
+                            <!-- Table cards will load here -->
                             <div class="empty-table">
-                                <p class="text-muted">Κανένα φύλλο στο τραπέζι</p>
+                                <p class="text-muted">Φόρτωση καρτών...</p>
                             </div>
                         </div>
                     </div>
@@ -213,15 +245,15 @@ if ($row = $result->fetch_assoc()) {
                     <!-- Player Area -->
                     <div class="player-area player">
                         <div class="player-header">
-                            <h5><i class="fas fa-user"></i> Εσύ (<?php echo htmlspecialchars($username); ?>)</h5>
+                            <h5><i class="fas fa-user"></i> Εσύ</h5>
                             <div class="player-stats">
-                                <span class="badge bg-success" id="my-cards-count">6 κάρτες</span>
+                                <span class="badge bg-success" id="my-cards-count">0 κάρτες</span>
                             </div>
                         </div>
                         <div class="hand-area" id="player-hand">
-                            <!-- Player's cards will be rendered here -->
+                            <!-- Player's cards -->
                             <div class="loading-cards">
-                                <i class="fas fa-spinner fa-spin"></i> Φόρτωση καρτών...
+                                <i class="fas fa-spinner fa-spin"></i> Φόρτωση χεριού...
                             </div>
                         </div>
                     </div>
@@ -233,11 +265,11 @@ if ($row = $result->fetch_assoc()) {
                 </div>
             </div>
             
-            <!-- Right Panel: Game Log & Chat -->
+            <!-- Right Panel -->
             <div class="col-md-3">
                 <div class="card mb-3">
                     <div class="card-header bg-dark text-white">
-                        <i class="fas fa-history"></i> Ιστορικό Κινήσεων
+                        <i class="fas fa-history"></i> Ιστορικό
                     </div>
                     <div class="card-body" style="max-height: 300px; overflow-y: auto;">
                         <ul class="list-unstyled" id="move-log">
@@ -253,168 +285,52 @@ if ($row = $result->fetch_assoc()) {
                     </div>
                     <div class="card-body">
                         <div class="d-grid gap-2">
-                            <button class="btn btn-success" id="btn-new-game-vs-computer">
+                            <button class="btn btn-success" id="btn-new-vs-computer">
                                 <i class="fas fa-robot"></i> vs Computer
                             </button>
-                            <button class="btn btn-warning" id="btn-new-game-vs-human">
+                            <button class="btn btn-warning" id="btn-new-vs-human">
                                 <i class="fas fa-users"></i> vs Άνθρωπο
                             </button>
                         </div>
-                        
-                        <hr>
-                        
-                        <div class="game-settings">
-                            <h6><i class="fas fa-cog"></i> Ρυθμίσεις:</h6>
-                            <div class="mb-3">
-                                <label class="form-label">Δυσκολία AI:</label>
-                                <select class="form-select" id="ai-difficulty">
-                                    <option value="easy">Εύκολη</option>
-                                    <option value="medium" selected>Μεσαία</option>
-                                    <option value="hard">Δύσκολη</option>
-                                </select>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Game Over Modal -->
-    <div class="modal fade" id="gameOverModal" tabindex="-1">
+    <!-- New Game Modal -->
+    <div class="modal fade" id="newGameModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header bg-warning">
-                    <h5 class="modal-title"><i class="fas fa-trophy"></i> Τέλος Παιχνιδιού!</h5>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Νέο Παιχνίδι</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body text-center">
-                    <h3 id="game-result-title">Νίκη!</h3>
-                    <div class="my-4">
-                        <i class="fas fa-trophy fa-4x text-warning"></i>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Τύπος Παιχνιδιού:</label>
+                        <select class="form-select" id="game-type">
+                            <option value="human-computer">vs Computer</option>
+                            <option value="human-human">vs Άνθρωπο</option>
+                        </select>
                     </div>
-                    <p><strong>Σκορ:</strong> <span id="final-my-score">0</span> - <span id="final-opponent-score">0</span></p>
-                    <p><strong>Ξερές:</strong> <span id="final-my-xeri">0</span> - <span id="final-opponent-xeri">0</span></p>
+                    <div class="mb-3" id="difficulty-container">
+                        <label class="form-label">Δυσκολία:</label>
+                        <select class="form-select" id="ai-difficulty">
+                            <option value="easy">Εύκολη</option>
+                            <option value="medium" selected>Μεσαία</option>
+                            <option value="hard">Δύσκολη</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Κλείσιμο</button>
-                    <button type="button" class="btn btn-primary" id="btn-play-again">Παίξε Ξανά</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Άκυρο</button>
+                    <button type="button" class="btn btn-primary" id="btn-create-game">Δημιουργία</button>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Game Engine -->
-    <script src="js/game-engine.js"></script>
-    
-    <script>
-    // Game configuration
-    const GAME_CONFIG = {
-        userId: <?php echo $user_id; ?>,
-        username: "<?php echo addslashes($username); ?>",
-        isGuest: <?php echo $is_guest ? 'true' : 'false'; ?>,
-        activeGameId: <?php echo $active_game_id; ?>,
-        playerNumber: <?php echo $player_number; ?>,
-        pollInterval: 2000 // 2 seconds
-    };
-    
-    $(document).ready(function() {
-        // Initialize game
-        if (GAME_CONFIG.activeGameId > 0) {
-            console.log("Active game found:", GAME_CONFIG.activeGameId);
-            GameEngine.init(GAME_CONFIG.activeGameId, GAME_CONFIG.playerNumber);
-        }
-        
-        // Event Listeners
-        $('#btn-new-game-vs-computer').click(createGameVsComputer);
-        $('#btn-new-game-vs-human').click(createGameVsHuman);
-        $('#btn-find-game').click(findAvailableGame);
-        $('#btn-play-again').click(playAgain);
-        $('#btn-logout').click(logout);
-        
-        // Logout function
-        function logout() {
-            if (confirm('Είστε σίγουρος ότι θέλετε να αποσυνδεθείτε;')) {
-                $.ajax({
-                    url: 'api/auth.php',
-                    method: 'POST',
-                    data: { action: 'logout' },
-                    success: function() {
-                        window.location.href = 'index.php';
-                    }
-                });
-            }
-        }
-    });
-    
-    function createGameVsComputer() {
-        const difficulty = $('#ai-difficulty').val();
-        
-        $.ajax({
-            url: 'api/game.php',
-            method: 'POST',
-            data: {
-                action: 'create_game',
-                game_type: 'human-computer',
-                difficulty: difficulty
-            },
-            success: function(response) {
-                if (response.success) {
-                    showMessage('Δημιουργήθηκε νέο παιχνίδι vs Computer!', 'success');
-                    GameEngine.init(response.game_id, response.player_number);
-                    GAME_CONFIG.activeGameId = response.game_id;
-                    GAME_CONFIG.playerNumber = response.player_number;
-                } else {
-                    showMessage(response.message || 'Σφάλμα δημιουργίας', 'danger');
-                }
-            }
-        });
-    }
-    
-    function createGameVsHuman() {
-        $.ajax({
-            url: 'api/game.php',
-            method: 'POST',
-            data: {
-                action: 'create_game',
-                game_type: 'human-human'
-            },
-            success: function(response) {
-                if (response.success) {
-                    showMessage('Δημιουργήθηκε νέο παιχνίδι! Περιμένετε αντίπαλο...', 'info');
-                    GameEngine.init(response.game_id, response.player_number);
-                    GAME_CONFIG.activeGameId = response.game_id;
-                    GAME_CONFIG.playerNumber = response.player_number;
-                }
-            }
-        });
-    }
-    
-    function findAvailableGame() {
-        // This would search for available games to join
-        showMessage('Αναζήτηση διαθέσιμων παιχνιδιών...', 'info');
-        // Implement join game logic
-    }
-    
-    function playAgain() {
-        $('#gameOverModal').modal('hide');
-        createGameVsComputer(); // Default to vs computer
-    }
-    
-    function showMessage(text, type) {
-        const $msg = $('#game-message');
-        $msg.removeClass('alert-info alert-success alert-danger')
-            .addClass('alert-' + type)
-            .show();
-        $('#message-text').text(text);
-        
-        setTimeout(() => {
-            $msg.fadeOut();
-        }, 3000);
-    }
-    </script>
+
 </body>
 </html>

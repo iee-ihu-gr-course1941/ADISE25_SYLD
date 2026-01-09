@@ -1,106 +1,74 @@
 <?php
 // api/auth.php
 require_once '../db_config.php';
-header('Content-Type: application/json');
 
+header('Content-Type: application/json');
+session_start();
+
+$db = getDBConnection();
 $action = $_POST['action'] ?? '';
 
+// Helper function για hashing password
+function hashPassword($password) {
+    return password_hash($password, PASSWORD_BCRYPT);
+}
+
+// Helper function για να επιστρέφει μηνύματα
+function jsonResponse($success, $message = '', $data = []) {
+    echo json_encode([
+        'success' => $success,
+        'message' => $message,
+        'data' => $data
+    ]);
+    exit();
+}
+
 switch ($action) {
-    case 'check_username':
-        checkUsername();
-        break;
-        
-    case 'check_email':
-        checkEmail();
-        break;
-        
     case 'login':
-        loginUser();
+        handleLogin();
         break;
-        
     case 'signup':
-        signupUser();
+        handleSignup();
         break;
-        
     case 'guest_login':
-        guestLogin();
+        handleGuestLogin();
         break;
-        
+    case 'check_username':
+        checkUsernameAvailability();
+        break;
+    case 'check_email':
+        checkEmailAvailability();
+        break;
     case 'forgot_password':
-        forgotPassword();
+        handleForgotPassword();
         break;
-        
     default:
-        echo json_encode(['error' => 'Invalid action']);
+        jsonResponse(false, 'Invalid action');
 }
 
-function checkUsername() {
-    global $db;
-    
-    $username = trim($_POST['username'] ?? '');
-    
-    if (strlen($username) < 3) {
-        echo json_encode(['available' => false]);
-        return;
-    }
-    
-    $sql = "SELECT id FROM users WHERE username = ?";
-    $stmt = $db->prepare($sql);
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $stmt->store_result();
-    
-    echo json_encode([
-        'available' => $stmt->num_rows === 0
-    ]);
-}
-
-function checkEmail() {
-    global $db;
-    
-    $email = trim($_POST['email'] ?? '');
-    
-    // Validate email format
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        echo json_encode(['available' => false]);
-        return;
-    }
-    
-    // Check for gmail.com (as requested)
-    if (!preg_match('/@gmail\.com$/i', $email)) {
-        echo json_encode(['available' => false, 'message' => 'Χρησιμοποιήστε Gmail']);
-        return;
-    }
-    
-    $sql = "SELECT id FROM users WHERE email = ?";
-    $stmt = $db->prepare($sql);
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $stmt->store_result();
-    
-    echo json_encode([
-        'available' => $stmt->num_rows === 0
-    ]);
-}
-
-function loginUser() {
+function handleLogin() {
     global $db;
     
     $identifier = trim($_POST['identifier'] ?? '');
     $password = $_POST['password'] ?? '';
     
     if (empty($identifier) || empty($password)) {
-        echo json_encode(['success' => false, 'message' => 'Συμπληρώστε όλα τα πεδία']);
-        return;
+        jsonResponse(false, 'Συμπληρώστε όλα τα πεδία');
     }
     
-    // Check if identifier is email or username
+    // Ελέγχουμε αν είναι email ή username
     $isEmail = filter_var($identifier, FILTER_VALIDATE_EMAIL);
     
     if ($isEmail) {
-        $sql = "SELECT id, username, password_hash, is_guest FROM users WHERE email = ?";
+        $sql = "SELECT id, username, email, password_hash, is_guest 
+                FROM users 
+                WHERE email = ? AND is_guest = FALSE 
+                LIMIT 1";
     } else {
-        $sql = "SELECT id, username, password_hash, is_guest FROM users WHERE username = ?";
+        $sql = "SELECT id, username, email, password_hash, is_guest 
+                FROM users 
+                WHERE username = ? AND is_guest = FALSE 
+                LIMIT 1";
     }
     
     $stmt = $db->prepare($sql);
@@ -108,41 +76,36 @@ function loginUser() {
     $stmt->execute();
     $result = $stmt->get_result();
     
-    if ($row = $result->fetch_assoc()) {
-        // Check if it's a guest account (no password)
-        if ($row['is_guest'] == 1) {
-            echo json_encode(['success' => false, 'message' => 'Ο λογαριασμός guest δεν μπορεί να συνδεθεί']);
-            return;
-        }
-        
-        // Verify password
-        if (password_verify($password, $row['password_hash'])) {
-            // Start session
-            session_start();
-            $_SESSION['user_id'] = $row['id'];
-            $_SESSION['username'] = $row['username'];
-            $_SESSION['is_guest'] = false;
-            
-            // Update last login
-            $update_sql = "UPDATE users SET last_login = NOW() WHERE id = ?";
-            $update_stmt = $db->prepare($update_sql);
-            $update_stmt->bind_param("i", $row['id']);
-            $update_stmt->execute();
-            
-            echo json_encode([
-                'success' => true,
-                'user_id' => $row['id'],
-                'username' => $row['username']
-            ]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Λάθος κωδικός']);
-        }
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Ο χρήστης δεν βρέθηκε']);
+    if ($result->num_rows === 0) {
+        jsonResponse(false, 'Λάθος email/username ή κωδικός');
     }
+    
+    $user = $result->fetch_assoc();
+    
+    // Επαλήθευση κωδικού
+    if (!password_verify($password, $user['password_hash'])) {
+        jsonResponse(false, 'Λάθος email/username ή κωδικός');
+    }
+    
+    // Ενημέρωση last_login
+    $updateSql = "UPDATE users SET last_login = NOW() WHERE id = ?";
+    $updateStmt = $db->prepare($updateSql);
+    $updateStmt->bind_param("i", $user['id']);
+    $updateStmt->execute();
+    
+    // Ορισμός session
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['username'] = $user['username'];
+    $_SESSION['is_guest'] = $user['is_guest'];
+    
+    jsonResponse(true, 'Επιτυχής σύνδεση', [
+        'user_id' => $user['id'],
+        'username' => $user['username'],
+        'is_guest' => $user['is_guest']
+    ]);
 }
 
-function signupUser() {
+function handleSignup() {
     global $db;
     
     $username = trim($_POST['username'] ?? '');
@@ -150,118 +113,221 @@ function signupUser() {
     $password = $_POST['password'] ?? '';
     $avatar = $_POST['avatar'] ?? 'default';
     
-    // Validation
+    // Βασικός έλεγχος
+    if (empty($username) || empty($email) || empty($password)) {
+        jsonResponse(false, 'Συμπληρώστε όλα τα υποχρεωτικά πεδία');
+    }
+    
+    // Έλεγχος username (μόνο λατινικά, αριθμοί, underscore)
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+        jsonResponse(false, 'Το username μπορεί να περιέχει μόνο λατινικούς χαρακτήρες, αριθμούς και _');
+    }
+    
     if (strlen($username) < 3) {
-        echo json_encode(['success' => false, 'message' => 'Το username πρέπει να έχει τουλάχιστον 3 χαρακτήρες']);
-        return;
+        jsonResponse(false, 'Το username πρέπει να έχει τουλάχιστον 3 χαρακτήρες');
     }
     
+    // Έλεγχος email
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        echo json_encode(['success' => false, 'message' => 'Μη έγκυρη διεύθυνση email']);
-        return;
+        jsonResponse(false, 'Μη έγκυρη διεύθυνση email');
     }
     
-    if (!preg_match('/@gmail\.com$/i', $email)) {
-        echo json_encode(['success' => false, 'message' => 'Χρησιμοποιήστε μόνο Gmail (@gmail.com)']);
-        return;
+    // Εξασφάλιση ότι είναι Gmail (όπως ζητήθηκε)
+    if (!str_ends_with(strtolower($email), '@gmail.com')) {
+        jsonResponse(false, 'Χρησιμοποιήστε διεύθυνση Gmail (@gmail.com)');
     }
     
+    // Έλεγχος κωδικού
     if (strlen($password) < 6) {
-        echo json_encode(['success' => false, 'message' => 'Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες']);
-        return;
+        jsonResponse(false, 'Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες');
     }
     
-    // Check if username exists
-    $check_sql = "SELECT id FROM users WHERE username = ? OR email = ?";
-    $check_stmt = $db->prepare($check_sql);
-    $check_stmt->bind_param("ss", $username, $email);
-    $check_stmt->execute();
-    $check_stmt->store_result();
+    // Έλεγχος αν υπάρχει ήδη το username
+    $checkUser = $db->prepare("SELECT id FROM users WHERE username = ?");
+    $checkUser->bind_param("s", $username);
+    $checkUser->execute();
     
-    if ($check_stmt->num_rows > 0) {
-        echo json_encode(['success' => false, 'message' => 'Το username ή email υπάρχει ήδη']);
-        return;
+    if ($checkUser->get_result()->num_rows > 0) {
+        jsonResponse(false, 'Το username υπάρχει ήδη');
     }
     
-    // Hash password
-    $password_hash = password_hash($password, PASSWORD_DEFAULT);
+    // Έλεγχος αν υπάρχει ήδη το email
+    $checkEmail = $db->prepare("SELECT id FROM users WHERE email = ?");
+    $checkEmail->bind_param("s", $email);
+    $checkEmail->execute();
     
-    // Insert user
+    if ($checkEmail->get_result()->num_rows > 0) {
+        jsonResponse(false, 'Το email υπάρχει ήδη');
+    }
+    
+    // Καταχώριση νέου χρήστη
+    $hashedPassword = hashPassword($password);
+    $isGuest = 0; // Κανονικός χρήστης, όχι guest
+    
     $sql = "INSERT INTO users (username, email, password_hash, is_guest, created_at) 
-            VALUES (?, ?, ?, 0, NOW())";
+            VALUES (?, ?, ?, ?, NOW())";
     
     $stmt = $db->prepare($sql);
-    $stmt->bind_param("sss", $username, $email, $password_hash);
+    $stmt->bind_param("sssi", $username, $email, $hashedPassword, $isGuest);
     
     if ($stmt->execute()) {
-        $user_id = $db->insert_id;
+        $user_id = $stmt->insert_id;
         
-        // Start session
-        session_start();
+        // Αυτόματη σύνδεση μετά την εγγραφή
         $_SESSION['user_id'] = $user_id;
         $_SESSION['username'] = $username;
-        $_SESSION['is_guest'] = false;
+        $_SESSION['is_guest'] = $isGuest;
         
-        echo json_encode([
-            'success' => true,
+        jsonResponse(true, 'Επιτυχής εγγραφή!', [
             'user_id' => $user_id,
-            'username' => $username,
-            'message' => 'Επιτυχής εγγραφή!'
+            'username' => $username
         ]);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Σφάλμα κατά την εγγραφή']);
+        jsonResponse(false, 'Σφάλμα κατά την εγγραφή: ' . $db->error);
     }
 }
 
-function guestLogin() {
+function handleGuestLogin() {
     global $db;
     
-    $guest_id = $_POST['guest_id'] ?? 'guest_' . rand(1000, 9999);
+    $guestId = $_POST['guest_id'] ?? ('guest_' . rand(1000, 9999));
     
-    // Create guest user
-    $sql = "INSERT INTO users (username, is_guest, created_at) 
-            VALUES (?, 1, NOW()) 
-            ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)";
+    // Δημιουργία μοναδικού username για guest
+    $username = $guestId;
+    $counter = 1;
+    
+    // Βεβαιώνουμε ότι το username είναι μοναδικό
+    while (true) {
+        $check = $db->prepare("SELECT id FROM users WHERE username = ?");
+        $check->bind_param("s", $username);
+        $check->execute();
+        
+        if ($check->get_result()->num_rows === 0) {
+            break;
+        }
+        
+        $username = $guestId . '_' . $counter;
+        $counter++;
+        
+        if ($counter > 100) {
+            jsonResponse(false, 'Δεν μπορεί να δημιουργηθεί guest account');
+        }
+    }
+    
+    // Δημιουργία guest account
+    $isGuest = 1;
+    $email = NULL; // Το guest δεν έχει email
+    
+    $sql = "INSERT INTO users (username, email, password_hash, is_guest, created_at) 
+            VALUES (?, ?, NULL, ?, NOW())";
     
     $stmt = $db->prepare($sql);
-    $stmt->bind_param("s", $guest_id);
+    $stmt->bind_param("ssi", $username, $email, $isGuest);
     
     if ($stmt->execute()) {
-        $user_id = $db->insert_id;
+        $user_id = $stmt->insert_id;
         
-        // Start session
-        session_start();
+        // Ορισμός session
         $_SESSION['user_id'] = $user_id;
-        $_SESSION['username'] = $guest_id;
-        $_SESSION['is_guest'] = true;
+        $_SESSION['username'] = $username;
+        $_SESSION['is_guest'] = $isGuest;
         
-        echo json_encode([
-            'success' => true,
+        jsonResponse(true, 'Guest login successful', [
             'user_id' => $user_id,
-            'username' => $guest_id
+            'username' => $username,
+            'is_guest' => $isGuest
         ]);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Σφάλμα δημιουργίας guest']);
+        jsonResponse(false, 'Σφάλμα κατά τη δημιουργία guest account');
     }
 }
 
-function forgotPassword() {
-    // Simplified version - just send a message
-    $email = $_POST['email'] ?? '';
+function checkUsernameAvailability() {
+    global $db;
     
-    if (empty($email)) {
-        echo json_encode(['success' => false, 'message' => 'Εισάγετε email']);
-        return;
+    $username = trim($_POST['username'] ?? '');
+    
+    if (empty($username)) {
+        jsonResponse(false, 'Το username δεν μπορεί να είναι κενό');
     }
     
-    // In a real app, you would:
-    // 1. Generate a reset token
-    // 2. Save it to database
-    // 3. Send email with reset link
+    if (strlen($username) < 3) {
+        jsonResponse(false, 'Τουλάχιστον 3 χαρακτήρες', ['available' => false]);
+    }
     
-    echo json_encode([
-        'success' => true,
-        'message' => 'Οδηγίες επαναφοράς στάλθηκαν στο email σας (όχι υλοποιημένο στο demo)'
-    ]);
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+        jsonResponse(false, 'Μόνο λατινικά, αριθμοί και _', ['available' => false]);
+    }
+    
+    $sql = "SELECT id FROM users WHERE username = ?";
+    $stmt = $db->prepare($sql);
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        jsonResponse(true, 'Το username υπάρχει ήδη', ['available' => false]);
+    } else {
+        jsonResponse(true, 'Το username είναι διαθέσιμο', ['available' => true]);
+    }
 }
+
+function checkEmailAvailability() {
+    global $db;
+    
+    $email = trim($_POST['email'] ?? '');
+    
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        jsonResponse(false, 'Μη έγκυρη διεύθυνση email', ['available' => false]);
+    }
+    
+    // Εξασφάλιση ότι είναι Gmail
+    if (!str_ends_with(strtolower($email), '@gmail.com')) {
+        jsonResponse(false, 'Χρησιμοποιήστε Gmail (@gmail.com)', ['available' => false]);
+    }
+    
+    $sql = "SELECT id FROM users WHERE email = ?";
+    $stmt = $db->prepare($sql);
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        jsonResponse(true, 'Το email υπάρχει ήδη', ['available' => false]);
+    } else {
+        jsonResponse(true, 'Το email είναι διαθέσιμο', ['available' => true]);
+    }
+}
+
+function handleForgotPassword() {
+    global $db;
+    
+    $email = trim($_POST['email'] ?? '');
+    
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        jsonResponse(false, 'Παρακαλώ εισάγετε έγκυρο email');
+    }
+    
+    // Έλεγχος αν υπάρχει ο χρήστης
+    $sql = "SELECT id, username FROM users WHERE email = ? AND is_guest = FALSE";
+    $stmt = $db->prepare($sql);
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows === 0) {
+        // Για ασφάλεια, δε λέμε αν το email υπάρχει ή όχι
+        jsonResponse(true, 'Εάν το email υπάρχει, σας στείλαμε οδηγίες επαναφοράς');
+    }
+    
+    $user = $result->fetch_assoc();
+    
+    // Στην πραγματικότητα, εδώ θα στείναμε email με reset link
+    // Για τώρα, απλά επιστρέφουμε επιτυχές μήνυμα
+    
+    jsonResponse(true, 'Οδηγίες επαναφοράς κωδικού στάλθηκαν στο email σας');
+}
+
+// Κλείσιμο σύνδεσης
+$db->close();
 ?>

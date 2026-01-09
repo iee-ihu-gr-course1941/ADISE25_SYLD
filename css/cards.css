@@ -1,6 +1,275 @@
-/* css/cards.css */
+/* css/cards.css - ΕΝΗΜΕΡΩΜΕΝΗ ΕΚΔΟΣΗ ΜΕ ΕΙΚΟΝΕΣ */
 
-/* Card deck colors */
+/* Καθαρισμός των παλιών CSS classes για ranks */
+.card-rank-A:before,
+.card-rank-2:before,
+.card-rank-3:before,
+.card-rank-4:before,
+.card-rank-5:before,
+.card-rank-6:before,
+.card-rank-7:before,
+.card-rank-8:before,
+.card-rank-9:before,
+.card-rank-10:before,
+.card-rank-J:before,
+.card-rank-Q:before,
+.card-rank-K:before {
+    display: none !important;
+}
+
+
+.card.back,
+.card[data-visible="false"],
+.card.hidden {
+    background-image: url('../images/cards/card_back.png') !important;
+    background-color: #2c3e50;
+    background-size: cover;
+    border: 1px solid #34495e;
+    position: relative;
+    cursor: default;
+}
+
+/* Fallback αν δεν υπάρχει εικόνα */
+.card.back:not([style*="background-image"]),
+.card[data-visible="false"]:not([style*="background-image"]),
+.card.hidden:not([style*="background-image"]) {
+    background: repeating-linear-gradient(
+        45deg,
+        #2c3e50,
+        #2c3e50 8px,
+        #34495e 8px,
+        #34495e 16px
+    );
+}
+
+/* Pattern overlay για πίσω μέρος */
+.card.back:before,
+.card[data-visible="false"]:before,
+.card.hidden:before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    z-index: 1;
+}
+
+/* Κέντρο του πίσω μέρους */
+.card.back:after,
+.card[data-visible="false"]:after,
+.card.hidden:after {
+    content: '🎴';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    opacity: 0.8;
+    z-index: 2;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Ειδικά για μικρές κάρτες */
+.card-small.back:after,
+.card-small[data-visible="false"]:after,
+.card-small.hidden:after {
+    font-size: 12px;
+}
+
+/* Σκιά για πίσω μέρος */
+.card.back,
+.card[data-visible="false"],
+.card.hidden {
+    box-shadow: 
+        inset 0 0 20px rgba(0,0,0,0.3),
+        0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Hover effect για πίσω μέρος */
+.card.back:hover,
+.card[data-visible="false"]:hover,
+.card.hidden:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        inset 0 0 20px rgba(0,0,0,0.3),
+        0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* Απενεργοποίηση text για πίσω μέρος */
+.card.back:not(.back):empty:before,
+.card.back:not(.back):empty:after,
+.card[data-visible="false"]:not(.back):empty:before,
+.card[data-visible="false"]:not(.back):empty:after,
+.card.hidden:not(.back):empty:before,
+.card.hidden:not(.back):empty:after {
+    display: none;
+}
+
+/* ============================================ */
+/* FLIP TRANSITION */
+/* ============================================ */
+
+/* Container για flip animation */
+.card-flip-container {
+    width: 80px;
+    height: 120px;
+    perspective: 1000px;
+    margin: 5px;
+    display: inline-block;
+}
+
+@media (max-width: 768px) {
+    .card-flip-container {
+        width: 60px;
+        height: 90px;
+    }
+}
+
+/* Η κάρτα για flip */
+.card-flip-container .card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s;
+    cursor: pointer;
+}
+
+/* Flip state */
+.card-flip-container .card.flipped {
+    transform: rotateY(180deg);
+}
+
+/* Πρόσωπο και πίσω */
+.card-flip-container .card-front,
+.card-flip-container .card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 8px;
+}
+
+/* Πίσω μέρος (default state) */
+.card-flip-container .card-back {
+    background: #2c3e50;
+    /* ίδιο styling με το .card.back παραπάνω */
+}
+
+/* Πρόσωπο */
+.card-flip-container .card-front {
+    transform: rotateY(180deg);
+    background-color: white;
+    background-size: cover;
+    background-position: center;
+}
+
+/* ============================================ */
+/* VISIBILITY STATES */
+/* ============================================ */
+
+/* Κάρτα που γίνεται ορατή */
+.card.revealing {
+    animation: revealCard 0.8s ease-out;
+}
+
+@keyframes revealCard {
+    0% { 
+        transform: rotateY(90deg);
+        opacity: 0;
+    }
+    100% { 
+        transform: rotateY(0deg);
+        opacity: 1;
+    }
+}
+
+/* Κάρτα που κρύβεται */
+.card.hiding {
+    animation: hideCard 0.6s ease-in;
+}
+
+@keyframes hideCard {
+    0% { 
+        transform: rotateY(0deg);
+        opacity: 1;
+    }
+    100% { 
+        transform: rotateY(90deg);
+        opacity: 0;
+    }
+}
+
+/* ============================================ */
+/* STOCK PILE - ΤΡΑΠΟΥΛΑ */
+/* ============================================ */
+
+/* Στοίβα από κάρτες (για stock/discard) */
+.card-stack .card-item {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.card-stack .card-item:nth-child(1) { z-index: 5; }
+.card-stack .card-item:nth-child(2) { 
+    top: 2px; 
+    left: 2px; 
+    z-index: 4; 
+}
+.card-stack .card-item:nth-child(3) { 
+    top: 4px; 
+    left: 4px; 
+    z-index: 3; 
+}
+.card-stack .card-item:nth-child(4) { 
+    top: 6px; 
+    left: 6px; 
+    z-index: 2; 
+}
+.card-stack .card-item:nth-child(5) { 
+    top: 8px; 
+    left: 8px; 
+    z-index: 1; 
+}
+
+/* Όλες οι κάρτες στη στοίβα είναι πίσω μέρος */
+.card-stack .card-item {
+    background-image: url('images\cards\card_back.jpg') !important;
+    background-color: #2c3e50;
+}
+
+/* ============================================ */
+/* OPPONENT'S HAND - ΧΕΡΙ ΑΝΤΙΠΑΛΟΥ */
+/* ============================================ */
+
+/* Χέρι αντιπάλου - όλες κάρτες πίσω μέρος */
+.opponent-hand .card {
+    background-image: url('images\cards\card_back.jpg') !important;
+    background-color: #2c3e50;
+    border: 1px solid #34495e;
+}
+
+/* Εμφάνιση αριθμού καρτών πάνω από το χέρι αντιπάλου */
+.opponent-hand .card-count {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+
+
+/* Βασικά χρώματα (για fallback text) */
 .card.hearts, .card.diamonds {
     color: #e74c3c;
 }
@@ -9,54 +278,237 @@
     color: #2c3e50;
 }
 
-/* Card ranks styling */
-.card-rank-A:before { content: 'A'; }
-.card-rank-2:before { content: '2'; }
-.card-rank-3:before { content: '3'; }
-.card-rank-4:before { content: '4'; }
-.card-rank-5:before { content: '5'; }
-.card-rank-6:before { content: '6'; }
-.card-rank-7:before { content: '7'; }
-.card-rank-8:before { content: '8'; }
-.card-rank-9:before { content: '9'; }
-.card-rank-10:before { content: '10'; }
-.card-rank-J:before { content: 'J'; }
-.card-rank-Q:before { content: 'Q'; }
-.card-rank-K:before { content: 'K'; }
+/* ============================================ */
+/* 1. ΒΑΣΙΚΗ ΚΑΡΤΑ ΜΕ ΕΙΚΟΝΕΣ */
+/* ============================================ */
 
-/* Special cards highlighting */
-.card-valet {
-    background: linear-gradient(135deg, #f1c40f, #f39c12);
-    color: white;
+.card {
+    width: 80px;
+    height: 120px;
+    border-radius: 8px;
+    background-color: white;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    position: relative;
+    display: inline-block;
+    margin: 5px;
+    transition: all 0.3s ease;
+    border: 1px solid #ddd;
 }
 
-.card-ten-diamonds {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-    color: white;
+/* ============================================ */
+/* 2. ΑΝΤΙΣΤΟΙΧΙΕΣ ΜΕ ΒΑΣΗ ΔΕΔΟΜΕΝΩΝ */
+/* ============================================ */
+
+/* ΚΟΥΠΕΣ (HEARTS) */
+.card[data-suit="hearts"][data-rank="2"] {
+    background-image: url('images\cards\card_Aheart.jpg');
+}
+.card[data-suit="hearts"][data-rank="2"] {
+    background-image: url('images\cards\card_2heart.jpg');
+}
+.card[data-suit="hearts"][data-rank="3"] {
+    background-image: url('images\cards\card_3heart.jpg');
+}
+.card[data-suit="hearts"][data-rank="4"] {
+    background-image: url('images\cards\card_4heart.jpg');
+}
+.card[data-suit="hearts"][data-rank="5"] {
+    background-image: url('images\cards\card_5heart.jpg');
+}
+.card[data-suit="hearts"][data-rank="6"] {
+    background-image: url('images\cards\card_6heart.jpg');
+}
+.card[data-suit="hearts"][data-rank="7"] {
+    background-image: url('images\cards\card_7heart.jpg');
+}
+.card[data-suit="hearts"][data-rank="8"] {
+    background-image: url('images\cards\card_8heart.jpg');
+}
+.card[data-suit="hearts"][data-rank="9"] {
+    background-image: url('images\cards\card_9heart.jpg');
+}
+.card[data-suit="hearts"][data-rank="10"] {
+    background-image: url('images\cards\card_10heart.jpg');
+}
+.card[data-suit="hearts"][data-rank="J"] {
+    background-image: url('images\cards\card_Jheart.jpg');
+}
+.card[data-suit="hearts"][data-rank="Q"] {
+    background-image: url('images\cards\card_Qheart.jpg');
+}
+.card[data-suit="hearts"][data-rank="K"] {
+    background-image: url('images\cards\card_Kheart.jpg');
 }
 
-.card-two-clubs {
-    background: linear-gradient(135deg, #27ae60, #229954);
-    color: white;
+/* ΚΑΡΑ (DIAMONDS) */
+.card[data-suit="diamonds"][data-rank="A"] {
+    background-image: url('images\cards\card_Akaro.jpg');
+}
+.card[data-suit="diamonds"][data-rank="2"] {
+    background-image: url('images\cards\card_2karo.jpg');
+}
+.card[data-suit="diamonds"][data-rank="3"] {
+    background-image: url('images\cards\card_3karo.jpg');
+}
+.card[data-suit="diamonds"][data-rank="4"] {
+    background-image: url('images\cards\card_4karo.jpg');
+}
+.card[data-suit="diamonds"][data-rank="5"] {
+    background-image: url('images\cards\card_5karo.jpg');
+}
+.card[data-suit="diamonds"][data-rank="6"] {
+    background-image: url('images\cards\card_6karo.jpg');
+}
+.card[data-suit="diamonds"][data-rank="7"] {
+    background-image: url('images\cards\card_7karo.jpg');
+}
+.card[data-suit="diamonds"][data-rank="8"] {
+    background-image: url('images\cards\card_8karo.jpg');
+}
+.card[data-suit="diamonds"][data-rank="9"] {
+    background-image: url('images\cards\card_9karo.jpg');
+}
+.card[data-suit="diamonds"][data-rank="10"] {
+    background-image: url('images\cards\card_10karo.jpg');
+}
+.card[data-suit="diamonds"][data-rank="J"] {
+    background-image: url('images\cards\card_Jkaro.jpg');
+}
+.card[data-suit="diamonds"][data-rank="Q"] {
+    background-image: url('images\cards\card_Qkaro.jpg');
+}
+.card[data-suit="diamonds"][data-rank="K"] {
+    background-image: url('images\cards\card_Kkaro.jpg');
 }
 
-/* Card selection states */
-.card.selected {
-    box-shadow: 0 0 0 3px #f39c12, 0 0 20px rgba(243, 156, 18, 0.5);
-    z-index: 100;
+/* ΜΠΑΣΤΟΥΝΙΑ (CLUBS) */
+.card[data-suit="clubs"][data-rank="A"] {
+    background-image: url('images\cards\card_Ampastouni.jpg');
+}
+.card[data-suit="clubs"][data-rank="2"] {
+    background-image: url('images\cards\card_2mpastouni.jpg');
+}
+.card[data-suit="clubs"][data-rank="3"] {
+    background-image: url('images\cards\card_3mpastouni.jpg');
+}
+.card[data-suit="clubs"][data-rank="4"] {
+    background-image: url('images\cards\card_4mpastouni.jpg');
+}
+.card[data-suit="clubs"][data-rank="5"] {
+    background-image: url('images\cards\card_5mpastouni.jpg');
+}
+.card[data-suit="clubs"][data-rank="6"] {
+    background-image: url('images\cards\card_6mpastouni.jpg');
+}
+.card[data-suit="clubs"][data-rank="7"] {
+    background-image: url('images\cards\card_7mpastouni.jpg');
+}
+.card[data-suit="clubs"][data-rank="8"] {
+    background-image: url('images\cards\card_8mpastouni.jpg');
+}
+.card[data-suit="clubs"][data-rank="9"] {
+    background-image: url('images\cards\card_9mpastouni.jpg');
+}
+.card[data-suit="clubs"][data-rank="10"] {
+    background-image: url('images\cards\card_10mpastouni.jpg');
+}
+.card[data-suit="clubs"][data-rank="J"] {
+    background-image: url('images\cards\card_Jmpastouni.jpg');
+}
+.card[data-suit="clubs"][data-rank="Q"] {
+    background-image: url('images\cards\card_Qmpastouni.jpg');
+}
+.card[data-suit="clubs"][data-rank="K"] {
+    background-image: url('images\cards\card_Kmpastouni.jpg');
 }
 
-.card.claimable {
-    border: 2px dashed #2ecc71;
-    cursor: pointer;
+/* ΣΠΑΘΙΑ (SPADES) */
+.card[data-suit="spades"][data-rank="A"] {
+    background-image: url('images\cards\card_Atrifili.jpg');
+}
+.card[data-suit="spades"][data-rank="2"] {
+    background-image: url('images\cards\card_2trifili.jpg');
+}
+.card[data-suit="spades"][data-rank="3"] {
+    background-image: url('images\cards\card_3trifili.jpg');
+}
+.card[data-suit="spades"][data-rank="4"] {
+    background-image: url('images\cards\card_4trifili.jpg');
+}
+.card[data-suit="spades"][data-rank="5"] {
+    background-image: url('images\cards\card_5trifili.jpg');
+}
+.card[data-suit="spades"][data-rank="6"] {
+    background-image: url('images\cards\card_6trifili.jpg');
+}
+.card[data-suit="spades"][data-rank="7"] {
+    background-image: url('images\cards\card_7trifili.jpg');
+}
+.card[data-suit="spades"][data-rank="8"] {
+    background-image: url('images\cards\card_8trifili.jpg');
+}
+.card[data-suit="spades"][data-rank="9"] {
+    background-image: url('images\cards\card_9trifili.jpg');
+}
+.card[data-suit="spades"][data-rank="10"] {
+    background-image: url('images\cards\card_10trifili.jpg');
+}
+.card[data-suit="spades"][data-rank="J"] {
+    background-image: url('images\cards\card_Jtrifili.jpg');
+}
+.card[data-suit="spades"][data-rank="Q"] {
+    background-image: url('images\cards\card_Qtrifili.jpg');
+}
+.card[data-suit="spades"][data-rank="K"] {
+    background-image: url('images\cards\card_Ktrifili.jpg');
 }
 
-.card.claimable:hover {
-    background: rgba(46, 204, 113, 0.1);
+/* ============================================ */
+/* 3. FALLBACK AN LΕΙΠΟΥΝ ΕΙΚΟΝΕΣ */
+/* ============================================ */
+
+/* Χρησιμοποιούμε τα data attributes για να δείξουμε rank/suit ως text */
+.card:not(.back):empty:before,
+.card:not(.back):not([style*="background-image"]):before {
+    content: attr(data-rank);
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    color: inherit;
+    z-index: 2;
 }
 
-/* Card back design */
+.card:not(.back):empty:after,
+.card:not(.back):not([style*="background-image"]):after {
+    content: attr(data-suit);
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    font-size: 24px;
+    color: inherit;
+    z-index: 2;
+}
+
+/* ============================================ */
+/* 4. ΠΙΣΩ ΜΕΡΟΣ ΚΑΡΤΑΣ (BACK DESIGN) */
+/* ============================================ */
+
+.card.back,
 .card-back-design {
+    background-image: url('images\cards\card_back.jpg') !important;
+    background-color: #3498db;
+    background-size: cover;
+    position: relative;
+}
+
+/* Δημιουργία pattern αν δεν υπάρχει εικόνα */
+.card.back:not([style*="background-image"]),
+.card-back-design:not([style*="background-image"]) {
     background: repeating-linear-gradient(
         45deg,
         #3498db,
@@ -64,10 +516,10 @@
         #2980b9 10px,
         #2980b9 20px
     );
-    position: relative;
 }
 
-.card-back-design:before {
+.card.back:not([style*="background-image"]):before,
+.card-back-design:not([style*="background-image"]):before {
     content: '🎴';
     position: absolute;
     top: 50%;
@@ -77,101 +529,215 @@
     opacity: 0.7;
 }
 
-/* Small cards for opponents */
-.card-small {
-    width: 40px;
-    height: 60px;
-    font-size: 12px;
-}
+/* ============================================ */
+/* 5. ΕΙΔΙΚΕΣ ΚΑΡΤΕΣ ΞΕΡΙΟΥ */
+/* ============================================ */
 
-.card-small .card-value {
-    font-size: 14px;
-}
-
-.card-small .card-suit {
-    font-size: 18px;
-}
-
-/* Stacked cards effect */
-.card-stack {
+/* Βαλές (J) - special highlighting */
+.card[data-rank="J"].valet,
+.card.valet {
     position: relative;
 }
 
-.card-stack .card-item {
+.card[data-rank="J"].valet:before,
+.card.valet:before {
+    content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-}
-
-.card-stack .card-item:nth-child(2) { top: 2px; left: 2px; }
-.card-stack .card-item:nth-child(3) { top: 4px; left: 4px; }
-.card-stack .card-item:nth-child(4) { top: 6px; left: 6px; }
-.card-stack .card-item:nth-child(5) { top: 8px; left: 8px; }
-
-/* Card pile for stock/discard */
-.card-pile {
-    width: 100px;
-    height: 140px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px dashed rgba(255, 255, 255, 0.3);
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
     border-radius: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: rgba(255, 255, 255, 0.5);
-    cursor: pointer;
-    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #f1c40f, #f39c12);
+    z-index: -1;
 }
 
-.card-pile:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.5);
+/* 10 διαμάντια - special */
+.card[data-suit="diamonds"][data-rank="10"].ten-diamonds,
+.card.ten-diamonds {
+    position: relative;
 }
 
-.card-pile.stock {
-    background: rgba(52, 152, 219, 0.2);
-    border-color: #3498db;
-}
-
-.card-pile.discard {
-    background: rgba(231, 76, 60, 0.2);
-    border-color: #e74c3c;
-}
-
-/* Card tooltips */
-.card-tooltip {
+.card[data-suit="diamonds"][data-rank="10"].ten-diamonds:before,
+.card.ten-diamonds:before {
+    content: '';
     position: absolute;
-    background: #2c3e50;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 12px;
-    z-index: 1000;
-    white-space: nowrap;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    pointer-events: none;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    z-index: -1;
 }
 
-/* Card flip animation */
+/* 2 μπαστούνια - special */
+.card[data-suit="clubs"][data-rank="2"].two-clubs,
+.card.two-clubs {
+    position: relative;
+}
+
+.card[data-suit="clubs"][data-rank="2"].two-clubs:before,
+.card.two-clubs:before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #27ae60, #229954);
+    z-index: -1;
+}
+
+/* ============================================ */
+/* 6. ΚΑΡΤΕΣ ΓΙΑ ΑΝΤΙΠΑΛΟΥΣ (ΜΙΚΡΟΤΕΡΕΣ) */
+/* ============================================ */
+
+.card-small {
+    width: 40px;
+    height: 60px;
+    font-size: 8px;
+    background-size: cover !important;
+}
+
+.card-small:before {
+    font-size: 10px;
+    top: 2px;
+    left: 2px;
+}
+
+.card-small:after {
+    font-size: 12px;
+    bottom: 2px;
+    right: 2px;
+}
+
+/* ============================================ */
+/* 7. STATES ΚΑΙ INTERACTIONS */
+/* ============================================ */
+
+.card.selected {
+    box-shadow: 0 0 0 3px #f39c12, 0 0 20px rgba(243, 156, 18, 0.5);
+    z-index: 100;
+    transform: translateY(-10px) scale(1.05);
+}
+
+.card.claimable {
+    border: 2px dashed #2ecc71;
+    cursor: pointer;
+}
+
+.card.claimable:hover {
+    transform: scale(1.05);
+    border-color: #27ae60;
+}
+
+.card.played {
+    opacity: 0.7;
+    transform: scale(0.95);
+}
+
+.card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(50%);
+}
+
+/* ============================================ */
+/* 8. GLOW EFFECTS */
+/* ============================================ */
+
+.card-glow {
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.7);
+    animation: pulse 2s infinite;
+}
+
+.card-glow-red {
+    box-shadow: 0 0 15px rgba(231, 76, 60, 0.7);
+    animation: pulse 2s infinite;
+}
+
+.card-glow-blue {
+    box-shadow: 0 0 15px rgba(52, 152, 219, 0.7);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 10px rgba(241, 196, 15, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(241, 196, 15, 0.9); }
+    100% { box-shadow: 0 0 10px rgba(241, 196, 15, 0.5); }
+}
+
+/* ============================================ */
+/* 9. FLIP ANIMATION */
+/* ============================================ */
+
 @keyframes flipCard {
-    0% { transform: rotateY(0deg); }
-    50% { transform: rotateY(90deg); }
-    100% { transform: rotateY(0deg); }
+    0% { 
+        transform: rotateY(0deg); 
+        background-image: url('images\cards\card_back.jpg');
+    }
+    49% { 
+        transform: rotateY(90deg); 
+        background-image: url('images\cards\card_back.jpg');
+    }
+    50% { 
+        transform: rotateY(90deg); 
+        background-image: none;
+    }
+    100% { 
+        transform: rotateY(0deg); 
+    }
 }
 
 .card-flip {
     animation: flipCard 0.6s ease-in-out;
 }
 
-/* Glow effect for important cards */
-.card-glow {
-    box-shadow: 0 0 15px rgba(241, 196, 15, 0.7);
+/* ============================================ */
+/* 10. LOADING STATE */
+/* ============================================ */
+
+.card.loading {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
 }
 
-.card-glow-red {
-    box-shadow: 0 0 15px rgba(231, 76, 60, 0.7);
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }
 
-.card-glow-blue {
-    box-shadow: 0 0 15px rgba(52, 152, 219, 0.7);
+/* ============================================ */
+/* 11. RESPONSIVE */
+/* ============================================ */
+
+@media (max-width: 768px) {
+    .card {
+        width: 60px;
+        height: 90px;
+    }
+    
+    .card-small {
+        width: 30px;
+        height: 45px;
+    }
+    
+    .card:before {
+        font-size: 12px;
+    }
+    
+    .card:after {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    .card {
+        width: 50px;
+        height: 75px;
+        margin: 3px;
+    }
 }

@@ -49,6 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="js/xeri-api-client.js"></script>
+    <script src="js/xeri-board-renderer.js"></script>
 </head>
 <body>
     <div class="container-fluid welcome-container">
